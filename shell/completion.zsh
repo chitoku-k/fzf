@@ -37,7 +37,7 @@ __fzfcmd_complete() {
 }
 
 __fzf_generic_path_completion() {
-  local base lbuf compgen fzf_opts suffix tail fzf dir leftover matches
+  local base lbuf compgen fzf_opts suffix tail fzf read_opts dir leftover matches
   base=$1
   lbuf=$2
   compgen=$3
@@ -49,14 +49,15 @@ __fzf_generic_path_completion() {
   setopt localoptions nonomatch
   eval "base=$base"
   [[ $base = *"/"* ]] && dir="$base"
+  [[ $fzf_opts = *"--print0"* ]] && read_opts=(-d $'\0')
   while [ 1 ]; do
     if [[ -z "$dir" || -d ${dir} ]]; then
       leftover=${base/#"$dir"}
       leftover=${leftover/#\/}
       [ -z "$dir" ] && dir='.'
       [ "$dir" != "/" ] && dir="${dir/%\//}"
-      matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${(Q)${(Z+n+)fzf}} ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" | while read item; do
-        echo -n "${(q)item}$suffix "
+      matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS" ${(Q)${(Z+n+)fzf}} ${(Q)${(Z+n+)fzf_opts}} -q "$leftover" | while read $read_opts item; do
+        echo -n "${${(q)item}//\\n/\\\\n}$suffix "
       done)
       matches=${matches% }
       if [ -n "$matches" ]; then
